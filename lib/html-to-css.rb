@@ -4,6 +4,12 @@
 
 require 'rexle'
 
+class String
+
+  def to_h()    
+    Hash[self.gsub(/\n/,'').split(/;\s*/).map{|x| x.split(/:/,2).map(&:strip)}]
+  end
+end
 
 class HtmlToCss
 
@@ -89,10 +95,10 @@ class HtmlToCss
   def scan_to_css(e, indent='', parent_selector='')
 
     return if @nocss.include? e.name
-    attr = e.attributes
+    h = e.attributes
 
-    if attr.has_key?(:id) then
-      selector = '#' + attr[:id]
+    if h.has_key?(:id) then
+      selector = '#' + h[:id]
     else
       selector = (parent_selector + ' ' + e.name).strip
     end
@@ -104,13 +110,15 @@ class HtmlToCss
       @selectors << selector
 
       if @elements.has_key?(e.name.to_sym) then
-        attributes = @elements[e.name.to_sym].strip.sub(':color','#a4f')
-          .gsub(/\n/,'').split(/;\s*/).join(";\n" + indent + '  ')
+        attributes = @elements[e.name.to_sym].strip.sub(':color','#a4f').to_h
       else
-        attributes = ''
+        attributes = {}
       end
+  
+      attr = attributes.merge!(h[:style].to_h)
+            .map{|x| x.join(': ')}.join(";\n" + indent + '  ')
 
-      @css << indent + selector + " {\n#{indent}  #{attributes}\n#{indent}}"
+      @css << indent + selector + " {\n#{indent}  #{attr}\n#{indent}}"
 
     end
 
