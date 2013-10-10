@@ -13,6 +13,8 @@ end
 
 class HtmlToCss
 
+  attr_accessor :elements
+
   def initialize(filename=nil)
 
     if filename then
@@ -27,7 +29,8 @@ class HtmlToCss
     end
 
     @selectors = []
-    @nocss = ['head', 'ul li ul', 'p a', 'div div \w+']
+    @nocss = ['head']
+    @nolayoutcss = ['ul li ul', 'p a', 'div div \w+']
     @css = []
 
     @elements = {
@@ -51,16 +54,33 @@ class HtmlToCss
   end
 
   def to_css()
-    scan_to_css @doc.root
-    @css.join "\n"
+    apply_css
   end
 
   def to_layout()
-    select_layout_elements()
-    to_css()
+
+    css = apply_css(:layout) {|doc| select_layout_elements(doc) }
+    @layout_selectors = @selectors.clone
+    css
+  end
+
+  def to_style()
+    apply_css :style
   end
 
   private
+
+  def apply_css(type=:default)
+
+    @css, @selectors = [], []
+    doc = @doc.root.deep_clone
+
+    yield(doc) if block_given?
+
+    scan_to_css(type, doc.root) 
+    @layout_selectors = @selectors.clone
+    @css.join "\n"    
+  end
 
   def merge(mdoc, e, axpath=[], prev_tally=[])
 
@@ -92,7 +112,7 @@ class HtmlToCss
     tally
   end
 
-  def scan_to_css(e, indent='', parent_selector='')
+  def scan_to_css(type, e, indent='', parent_selector='', &blk)
 
     return if @nocss.include? e.name
     h = e.attributes
@@ -102,21 +122,33 @@ class HtmlToCss
     else
       selector = (parent_selector + ' ' + e.name).strip
     end
-    
-    return if @nocss.detect {|x| selector =~ /#{x}/ }
+
+    return if @nolayoutcss.detect {|x| selector =~ /#{x}/ } and type == :layout
 
     unless @selectors.include? selector then
 
       @selectors << selector
 
       if @elements.has_key?(e.name.to_sym) then
-        attributes = @elements[e.name.to_sym].strip.sub(':color','#a4f').to_h
+        attributes = @elements[e.name.to_sym].strip.sub(':color','#a5f').to_h
       else
         attributes = {}
       end
-  
-      attr = attributes.merge!(h[:style].to_h)
-            .map{|x| x.join(': ')}.join(";\n" + indent + '  ')
+
+      h_attributes = attributes.merge! h[:style].to_h
+
+      if type == :layout then
+
+        %w(font color font-family font-size background-image border line-height
+          list-style-type font-weight font-style)\
+        .each {|x| h_attributes.delete x if h_attributes.has_key? x}
+      elsif type == :style and @layout_selectors.include? selector
+
+        %w(float margin padding clear align width height display overflow)\
+        .each {|x| h_attributes.delete x if h_attributes.has_key? x}
+      end
+
+      attr =  h_attributes.map{|x| x.join(': ')}.join(";\n" + indent + '  ')
 
       @css << indent + selector + " {\n#{indent}  #{attr}\n#{indent}}"
 
@@ -126,13 +158,13 @@ class HtmlToCss
 
     indent += '  '
     e.elements.each do |x|
-      scan_to_css x, indent, parent_selector
+      scan_to_css type, x, indent, parent_selector
     end
   end
 
-  def select_layout_elements()
+  def select_layout_elements(doc)
 
-    a = @doc.root.xpath '//div'
+    a = doc.root.xpath '//div'
     a.reverse.each do |e|
 
       if not e.attributes[:id] then
