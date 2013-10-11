@@ -15,7 +15,11 @@ class HtmlToCss
 
   attr_accessor :elements
 
-  def initialize(filename=nil)
+  def initialize(options={})
+
+    opt = {rand_color: true, filename: nil}.merge options
+    filename = opt[:filename]
+    @rand_color = opt[:rand_color]
 
     if filename then
 
@@ -130,7 +134,8 @@ class HtmlToCss
       @selectors << selector
 
       if @elements.has_key?(e.name.to_sym) then
-        attributes = @elements[e.name.to_sym].strip.sub(':color','#a5f').to_h
+        c = @rand_color ? "%06x" % (rand * 0xffffff) : 'a5f'
+        attributes = @elements[e.name.to_sym].strip.sub(':color','#' + c).to_h
       else
         attributes = {}
       end
