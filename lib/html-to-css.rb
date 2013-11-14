@@ -34,7 +34,7 @@ class HtmlToCss
 
     @selectors = []
     @nocss = ['head']
-    @nolayoutcss = ['ul li ul', 'p a', 'div div \w+']
+    @nolayoutcss = ['ul>li>a', 'ul>li>ul', 'p>a', 'div>div>\w+', 'article']
     @css = []
 
     @elements = {
@@ -53,7 +53,10 @@ class HtmlToCss
       html: "background-color: :color;",
       li:   "background-color: :color;",
       p:    "background-color: :color;",
-      ul:   "background-color: :color;"
+      ul:   "background-color: :color;",
+      article: "background-color: :color;",
+      section: "background-color: :color;",
+      footer:  "background-color: :color;"
     }
   end
 
@@ -124,7 +127,8 @@ class HtmlToCss
     if h.has_key?(:id) then
       selector = '#' + h[:id]
     else
-      selector = (parent_selector + ' ' + e.name).strip
+      ps = parent_selector
+      selector = (ps.empty? ? e.name : ps + '>' + e.name).strip
     end
 
     return if @nolayoutcss.detect {|x| selector =~ /#{x}/ } and type == :layout
