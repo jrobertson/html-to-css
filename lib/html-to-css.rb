@@ -4,14 +4,20 @@
 
 require 'rexle'
 
-class String
+module StringHelper
 
-  def to_h()    
-    Hash[self.gsub(/\n/,'').split(/;\s*/).map{|x| x.split(/:/,2).map(&:strip)}]
+  refine String do
+
+    def to_h()    
+      Hash[self.gsub(/\n/,'').split(/;\s*/).map{|x| x.split(/:/,2).map(&:strip)}]
+    end
+
   end
 end
 
 class HtmlToCss
+
+  using StringHelper
 
   attr_accessor :elements
 
@@ -138,8 +144,10 @@ class HtmlToCss
       @selectors << selector
 
       if @elements.has_key?(e.name.to_sym) then
-        c = @rand_color ? "%06x" % (rand * 0xffffff) : 'a5f'
-        attributes = @elements[e.name.to_sym].strip.sub(':color','#' + c).to_h
+        #c = @rand_color ? "#%06x" % (rand * 0xffffff) : '#a5f'
+        c = @rand_color ? "rgba(%s,%s,%s, 0.3)" % 3.times.map{rand(255)} :  '#a5f'
+
+        attributes = @elements[e.name.to_sym].strip.sub(':color', c).to_h
       else
         attributes = {}
       end
