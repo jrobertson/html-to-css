@@ -4,12 +4,21 @@
 
 require 'rexle'
 
+
+module CSSHelper
+  def self.all_background_transparent(s)
+    s.gsub(/rgba[^\)]+\)/, 'transparent') 
+  end
+end
+
 module StringHelper
 
   refine String do
 
     def to_h()    
-      Hash[self.gsub(/\n/,'').split(/;\s*/).map{|x| x.split(/:/,2).map(&:strip)}]
+      Hash[
+        self.gsub(/\n/,'').split(/;\s*/).map{|x| x.split(/:/,2).map(&:strip)}
+      ]
     end
 
   end
@@ -21,21 +30,21 @@ class HtmlToCss
 
   attr_accessor :elements
 
-  def initialize(options={})
+  def initialize(s=nil, rand_color: true, file: nil)
 
-    opt = {rand_color: true, filename: nil}.merge options
-    filename = opt[:filename]
-    @rand_color = opt[:rand_color]
+    @rand_color = rand_color
 
-    if filename then
+    if s then
+      @doc = Rexle.new s
+    elsif file
 
-      @doc = Rexle.new File.read(filename)
+      @doc = Rexle.new File.read(file)
 
     else
 
       a = Dir.glob("*.html")
       @doc = Rexle.new File.read(a.pop)
-      a.each {|file| merge(@doc, Rexle.new(File.read(file)).root ) }
+      a.each {|f| merge(@doc, Rexle.new(File.read(f)).root ) }
     end
 
     @selectors = []
@@ -93,7 +102,7 @@ class HtmlToCss
     scan_to_css(type, doc.root) 
     @layout_selectors = @selectors.clone
     @css.join "\n"    
-  end
+  end      
 
   def merge(mdoc, e, axpath=[], prev_tally=[])
 
@@ -145,7 +154,8 @@ class HtmlToCss
 
       if @elements.has_key?(e.name.to_sym) then
         #c = @rand_color ? "#%06x" % (rand * 0xffffff) : '#a5f'
-        c = @rand_color ? "rgba(%s,%s,%s, 0.3)" % 3.times.map{rand(255)} :  '#a5f'
+        c = @rand_color ? "rgba(%s,%s,%s, 0.3)" % 3.times.map{rand(255)} \
+            : '#a5f'
 
         attributes = @elements[e.name.to_sym].strip.sub(':color', c).to_h
       else
