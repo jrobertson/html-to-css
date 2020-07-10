@@ -48,7 +48,7 @@ class HtmlToCss
     end
 
     @selectors = []
-    @nocss = ['head']
+    @nocss = %i(head script)
     @nolayoutcss = ['ul>li>a', 'ul>li>ul', 'p>a', 'div>div>\w+', 'article']
     @css = []
 
@@ -74,7 +74,6 @@ class HtmlToCss
       footer:  "background-color: :color;"
     }
     
-    @ignore_elements = %i(script)
   end
 
   def to_css()
@@ -138,7 +137,7 @@ class HtmlToCss
 
   def scan_to_css(type, e, indent='', parent_selector='', &blk)
 
-    return if @nocss.include? e.name
+    return if @nocss.include? e.name.to_sym
     h = e.attributes
 
     if h.has_key?(:id) then
@@ -189,7 +188,6 @@ class HtmlToCss
     
     e.elements.each do |x|
       
-      next if @ignore_elements.include? x.name.to_sym
       scan_to_css type, x, indent, parent_selector
       
     end
