@@ -73,6 +73,8 @@ class HtmlToCss
       section: "background-color: :color;",
       footer:  "background-color: :color;"
     }
+    
+    @ignore_elements = %i(script)
   end
 
   def to_css()
@@ -184,8 +186,12 @@ class HtmlToCss
     parent_selector = selector unless selector == 'html'
 
     indent += '  '
+    
     e.elements.each do |x|
+      
+      next if @ignore_elements.include? x.name.to_sym
       scan_to_css type, x, indent, parent_selector
+      
     end
   end
 
@@ -211,4 +217,4 @@ end
 
 if __FILE__ == $0 then
   css = HtmlToCss.new('index.html').to_css
-end
+end  

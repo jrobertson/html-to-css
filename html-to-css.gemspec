@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'html-to-css'
-  s.version = '0.1.8'
+  s.version = '0.1.9'
   s.summary = 'Generates CSS from HTML passed into it.'
   s.authors = ['James Robertson']
   s.files = Dir['lib/html-to-css.rb']
